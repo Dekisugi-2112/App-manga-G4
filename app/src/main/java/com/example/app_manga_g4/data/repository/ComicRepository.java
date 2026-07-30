@@ -17,7 +17,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-// Repository quản lý các thao tác lấy dữ liệu truyện, chapter, trang tranh từ CSDL Supabase
+// Repository điều phối dữ liệu với cơ chế TỰ ĐỘNG HÓA TẢI TRANG TRANH
 public class ComicRepository {
 
     private SupabaseApi api;
@@ -30,7 +30,7 @@ public class ComicRepository {
         }
     }
 
-    // Lấy danh sách truyện từ bảng 'comics' trên Supabase
+    // Lấy danh sách truyện từ CSDL Supabase
     public void fetchComics(MutableLiveData<Resource<List<Comic>>> liveData) {
         liveData.setValue(Resource.loading(null));
 
@@ -56,7 +56,7 @@ public class ComicRepository {
         });
     }
 
-    // Lấy danh sách các chương của 1 bộ truyện theo comicId từ bảng 'chapters'
+    // Lấy danh sách các chương của bộ truyện từ bảng 'chapters'
     public void getChaptersForComic(int comicId, MutableLiveData<Resource<List<Chapter>>> liveData) {
         liveData.setValue(Resource.loading(null));
 
@@ -71,7 +71,7 @@ public class ComicRepository {
                 if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
                     liveData.setValue(Resource.success(response.body()));
                 } else {
-                    liveData.setValue(Resource.error("Không có chương nào cho bộ truyện này", null));
+                    liveData.setValue(Resource.error("Chưa có chương nào cho bộ truyện này", null));
                 }
             }
 
@@ -82,30 +82,29 @@ public class ComicRepository {
         });
     }
 
-    // Lấy danh sách các trang ảnh của 1 chapter từ bảng 'pages' trên Supabase
-    public void getPagesForChapter(int chapterId, MutableLiveData<Resource<List<Page>>> liveData) {
+    // ⭐ PHƯƠNG THỨC TỰ ĐỘNG HÓA 100%: Tự động sinh danh sách URL trang ảnh từ Storage
+    // Không cần dán bất kỳ link nào vào CSDL! Bạn chỉ cần upload ảnh 1.jpg, 2.jpg... vào thư mục Storage.
+    public void generatePagesAutomatically(int comicId, int chapterId, int totalPages, MutableLiveData<Resource<List<Page>>> liveData) {
         liveData.setValue(Resource.loading(null));
 
-        if (Constants.SUPABASE_URL.contains("your-supabase-project")) {
-            liveData.setValue(Resource.success(getDemoPages(chapterId)));
-            return;
+        List<Page> pageList = new ArrayList<>();
+        int pagesCount = totalPages > 0 ? totalPages : 10; // Mặc định 10 trang nếu không truyền
+
+        // Tạo tiền tố URL chuẩn theo cấu trúc thư mục Supabase Storage:
+        // https://<YOUR_PROJECT_ID>.supabase.co/storage/v1/object/public/chapter-pages/comic_X/chapter_Y/
+        String baseUrl = Constants.SUPABASE_URL;
+        if (!baseUrl.endsWith("/")) {
+            baseUrl += "/";
+        }
+        String folderPath = baseUrl + "storage/v1/object/public/chapter-pages/comic_" + comicId + "/chapter_" + chapterId + "/";
+
+        // Tự động lặp sinh danh sách URL cho từng bức ảnh 1.jpg, 2.jpg, 3.jpg...
+        for (int i = 1; i <= pagesCount; i++) {
+            String imageUrl = folderPath + i + ".jpg";
+            pageList.add(new Page(i, chapterId, i, imageUrl));
         }
 
-        api.getPagesForChapter("eq." + chapterId, "page_number.asc").enqueue(new Callback<List<Page>>() {
-            @Override
-            public void onResponse(Call<List<Page>> call, Response<List<Page>> response) {
-                if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
-                    liveData.setValue(Resource.success(response.body()));
-                } else {
-                    liveData.setValue(Resource.error("Chưa có trang tranh nào cho chapter này", null));
-                }
-            }
-
-            @Override
-            public void onFailure(Call<List<Page>> call, Throwable t) {
-                liveData.setValue(Resource.error("Lỗi nạp trang tranh: " + t.getMessage(), null));
-            }
-        });
+        liveData.setValue(Resource.success(pageList));
     }
 
     // Dữ liệu dự phòng nếu chưa cấu hình URL Supabase thực tế
@@ -119,13 +118,7 @@ public class ComicRepository {
 
     private List<Chapter> getDemoChapters(int comicId) {
         List<Chapter> chapters = new ArrayList<>();
-        chapters.add(new Chapter(1, comicId, 1.0, "Chương 1: Khởi đầu chuyến hành trình", "2026-07-01"));
+        chapters.add(new Chapter(101, comicId, 1.0, "Chương 1: Khởi đầu chuyến hành trình", 10, "2026-07-01"));
         return chapters;
-    }
-
-    private List<Page> getDemoPages(int chapterId) {
-        List<Page> pages = new ArrayList<>();
-        pages.add(new Page(1, chapterId, 1, "https://upload.wikimedia.org/wikipedia/vi/9/90/One_Piece_Volume_61_Cover.jpg"));
-        return pages;
     }
 }

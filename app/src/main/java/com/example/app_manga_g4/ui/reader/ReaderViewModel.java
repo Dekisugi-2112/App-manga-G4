@@ -10,7 +10,7 @@ import com.example.app_manga_g4.utils.Resource;
 
 import java.util.List;
 
-// ViewModel quản lý LiveData dữ liệu trang ảnh cho màn hình đọc truyện
+// ViewModel quản lý tự động hóa sinh danh sách trang tranh
 public class ReaderViewModel extends ViewModel {
 
     private final ComicRepository repository;
@@ -24,7 +24,8 @@ public class ReaderViewModel extends ViewModel {
         return pagesLiveData;
     }
 
-    public void loadPages(int chapterId) {
-        repository.getPagesForChapter(chapterId, pagesLiveData);
+    // Tự động nạp danh sách URL trang tranh từ Storage theo comicId, chapterId và totalPages
+    public void loadPagesAutomatically(int comicId, int chapterId, int totalPages) {
+        repository.generatePagesAutomatically(comicId, chapterId, totalPages, pagesLiveData);
     }
 }

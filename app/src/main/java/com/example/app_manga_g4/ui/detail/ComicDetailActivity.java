@@ -23,7 +23,7 @@ import com.example.app_manga_g4.ui.reader.ReaderActivity;
 
 import java.util.List;
 
-// Activity hiển thị chi tiết thông tin truyện và danh sách các chương thật
+// Activity hiển thị thông tin truyện và danh sách các chương
 public class ComicDetailActivity extends AppCompatActivity {
 
     public static final String EXTRA_COMIC = "extra_comic";
@@ -32,20 +32,21 @@ public class ComicDetailActivity extends AppCompatActivity {
     private ChapterAdapter adapter;
     private ProgressBar pbLoading;
     private List<Chapter> currentChapterList;
+    private Comic currentComic;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_comic_detail);
 
-        Comic comic = (Comic) getIntent().getSerializableExtra(EXTRA_COMIC);
-        if (comic == null) {
+        currentComic = (Comic) getIntent().getSerializableExtra(EXTRA_COMIC);
+        if (currentComic == null) {
             finish();
             return;
         }
 
-        initViews(comic);
-        initViewModel(comic.getId());
+        initViews(currentComic);
+        initViewModel(currentComic.getId());
     }
 
     private void initViews(Comic comic) {
@@ -63,41 +64,44 @@ public class ComicDetailActivity extends AppCompatActivity {
         tvStatus.setText(comic.getStatus());
         tvDesc.setText(comic.getDescription());
 
-        // Glide nạp ảnh bìa thật từ Supabase Storage
+        // Glide nạp ảnh bìa từ Supabase Storage
         Glide.with(this)
                 .load(comic.getCoverUrl())
                 .placeholder(android.R.drawable.ic_menu_gallery)
                 .into(imgCover);
 
-        // Click vào 1 chapter -> Mở màn hình đọc ReaderActivity
+        // Click vào 1 chapter -> Mở màn hình đọc ReaderActivity tự động nạp ảnh từ Storage
         adapter = new ChapterAdapter(chapter -> {
-            openReader(chapter.getId());
+            openReader(comic.getId(), chapter.getId(), chapter.getTotalPages());
         });
 
         rvChapters.setLayoutManager(new LinearLayoutManager(this));
         rvChapters.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
         rvChapters.setAdapter(adapter);
 
-        // Click nút "Đọc từ đầu" -> Mở chương đầu tiên trong danh sách
+        // Click nút "Đọc từ đầu" -> Mở chương đầu tiên
         btnReadFirst.setOnClickListener(v -> {
             if (currentChapterList != null && !currentChapterList.isEmpty()) {
-                openReader(currentChapterList.get(0).getId());
+                Chapter firstChapter = currentChapterList.get(0);
+                openReader(comic.getId(), firstChapter.getId(), firstChapter.getTotalPages());
             } else {
                 Toast.makeText(this, "Đang tải danh sách chương...", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    private void openReader(int chapterId) {
+    // Truyền comicId, chapterId và totalPages sang ReaderActivity để tự động sinh URL
+    private void openReader(int comicId, int chapterId, int totalPages) {
         Intent intent = new Intent(ComicDetailActivity.this, ReaderActivity.class);
+        intent.putExtra(ReaderActivity.EXTRA_COMIC_ID, comicId);
         intent.putExtra(ReaderActivity.EXTRA_CHAPTER_ID, chapterId);
+        intent.putExtra(ReaderActivity.EXTRA_TOTAL_PAGES, totalPages);
         startActivity(intent);
     }
 
     private void initViewModel(int comicId) {
         viewModel = new ViewModelProvider(this).get(DetailViewModel.class);
 
-        // LẮNG NGHE LIVEDATA DANH SÁCH CHAPTER TỪ SUPABASE:
         viewModel.getChaptersLiveData().observe(this, resource -> {
             switch (resource.status) {
                 case LOADING:
