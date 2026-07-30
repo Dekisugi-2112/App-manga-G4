@@ -1,3 +1,7 @@
+// ViewModel - Phục vụ
+// Nhận yêu cầu từ lễ tân, quản lý danh sách món ăn dưới dạng LiveData, giữ dữ liệu an toàn kể cả khi nhà hàng xoay chuyển.
+
+
 package com.example.app_manga_g4.ui.home;
 
 import androidx.lifecycle.LiveData;

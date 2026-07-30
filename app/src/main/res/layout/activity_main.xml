@@ -9,7 +9,7 @@
     android:background="#F4F5F7"
     tools:context=".MainActivity">
 
-    <!-- Top Bar -->
+    <!-- Header Bar -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -19,25 +19,37 @@
         android:elevation="4dp"
         android:gravity="center_vertical">
 
-        <TextView
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Manga Reader (Nhóm G4)"
-            android:textColor="@android:color/black"
-            android:textSize="20sp"
-            android:textStyle="bold" />
+            android:orientation="vertical">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="MVVM"
-            android:background="#E3F2FD"
-            android:textColor="#1976D2"
-            android:paddingHorizontal="10dp"
-            android:paddingVertical="4dp"
-            android:textStyle="bold"
-            android:textSize="12sp" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Manga Reader (G4)"
+                android:textColor="@android:color/black"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvUserEmail"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Xin chào, User"
+                android:textColor="@android:color/darker_gray"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/btnLogout"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Đăng xuất"
+            android:src="@android:drawable/ic_lock_power_off"
+            app:tint="#D32F2F" />
     </LinearLayout>
 
     <!-- Search Section -->
@@ -57,13 +69,13 @@
             android:drawableStart="@android:drawable/ic_menu_search"
             android:drawablePadding="12dp"
             android:hint="Tìm kiếm tên truyện, tác giả..."
-            android:paddingHorizontal="16dp"
             android:inputType="text"
             android:maxLines="1"
+            android:paddingHorizontal="16dp"
             android:textSize="14sp" />
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- Main Content Grid -->
+    <!-- Content Grid -->
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
@@ -80,7 +92,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:text="Không tìm thấy truyện nào!"
+            android:text="Không tìm thấy truyện nào trên Supabase!"
             android:textColor="@android:color/darker_gray"
             android:textSize="15sp"
             android:visibility="gone" />

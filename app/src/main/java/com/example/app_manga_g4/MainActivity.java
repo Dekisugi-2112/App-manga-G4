@@ -6,6 +6,7 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -15,14 +16,17 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.app_manga_g4.data.model.Comic;
+import com.example.app_manga_g4.ui.auth.LoginActivity;
 import com.example.app_manga_g4.ui.detail.ComicDetailActivity;
 import com.example.app_manga_g4.ui.home.ComicAdapter;
 import com.example.app_manga_g4.ui.home.HomeViewModel;
+import com.example.app_manga_g4.utils.SessionManager;
 
+// Activity Trang chủ hiển thị danh sách truyện thật từ Supabase CSDL
 public class MainActivity extends AppCompatActivity {
 
     private HomeViewModel viewModel;
+    private SessionManager sessionManager;
     private ComicAdapter adapter;
     private ProgressBar pbLoading;
     private TextView tvEmpty;
@@ -30,6 +34,15 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        sessionManager = new SessionManager(this);
+        // Kiểm tra xem đã đăng nhập chưa, nếu chưa -> Chuyển về LoginActivity
+        if (!sessionManager.isLoggedIn()) {
+            startActivity(new Intent(this, LoginActivity.class));
+            finish();
+            return;
+        }
+
         setContentView(R.layout.activity_main);
 
         initViews();
@@ -40,11 +53,25 @@ public class MainActivity extends AppCompatActivity {
     private void initViews() {
         pbLoading = findViewById(R.id.pbHomeLoading);
         tvEmpty = findViewById(R.id.tvEmpty);
+        TextView tvUserEmail = findViewById(R.id.tvUserEmail);
+        ImageButton btnLogout = findViewById(R.id.btnLogout);
         RecyclerView rvComics = findViewById(R.id.rvComics);
 
-        // Hiển thị danh sách truyện dạng lưới 2 cột (Grid 2 Columns)
+        // Hiển thị email người dùng đang đăng nhập
+        tvUserEmail.setText("Xin chào: " + sessionManager.getUserEmail());
+
+        // Bắt sự kiện Đăng xuất
+        btnLogout.setOnClickListener(v -> {
+            sessionManager.logout();
+            Toast.makeText(this, "Đã đăng xuất!", Toast.LENGTH_SHORT).show();
+            startActivity(new Intent(MainActivity.this, LoginActivity.class));
+            finish();
+        });
+
+        // Thiết lập hiển thị danh sách lưới 2 cột
         rvComics.setLayoutManager(new GridLayoutManager(this, 2));
 
+        // Click vào 1 truyện -> Mở màn hình Chi tiết truyện
         adapter = new ComicAdapter(comic -> {
             Intent intent = new Intent(MainActivity.this, ComicDetailActivity.class);
             intent.putExtra(ComicDetailActivity.EXTRA_COMIC, comic);
@@ -57,7 +84,7 @@ public class MainActivity extends AppCompatActivity {
     private void initViewModel() {
         viewModel = new ViewModelProvider(this).get(HomeViewModel.class);
 
-        // Lắng nghe dữ liệu từ LiveData chuẩn MVVM 100%
+        // LẮNG NGHE LIVEDATA DANH SÁCH TRUYỆN THẬT TỪ SUPABASE:
         viewModel.getComicsLiveData().observe(this, resource -> {
             switch (resource.status) {
                 case LOADING:
@@ -81,7 +108,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // Tải danh sách truyện
+        // Bảo ViewModel nạp danh sách truyện
         viewModel.loadComics();
     }
 
