@@ -37,19 +37,18 @@
                 android:id="@+id/tvUserEmail"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Xin chào, User"
+                android:text="Chào mừng Khách"
                 android:textColor="@android:color/darker_gray"
                 android:textSize="12sp" />
         </LinearLayout>
 
-        <ImageButton
-            android:id="@+id/btnLogout"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Đăng xuất"
-            android:src="@android:drawable/ic_lock_power_off"
-            app:tint="#D32F2F" />
+        <Button
+            android:id="@+id/btnAuthAction"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Đăng nhập"
+            android:textSize="12sp"
+            app:cornerRadius="20dp" />
     </LinearLayout>
 
     <!-- Search Section -->

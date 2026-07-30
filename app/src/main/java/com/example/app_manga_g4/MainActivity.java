@@ -5,8 +5,8 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -22,7 +22,7 @@ import com.example.app_manga_g4.ui.home.ComicAdapter;
 import com.example.app_manga_g4.ui.home.HomeViewModel;
 import com.example.app_manga_g4.utils.SessionManager;
 
-// Activity Trang chủ hiển thị danh sách truyện thật từ Supabase CSDL
+// Activity Trang chủ hiển thị ngay lập tức khi mở ứng dụng (Không bắt buộc Đăng nhập)
 public class MainActivity extends AppCompatActivity {
 
     private HomeViewModel viewModel;
@@ -30,48 +30,52 @@ public class MainActivity extends AppCompatActivity {
     private ComicAdapter adapter;
     private ProgressBar pbLoading;
     private TextView tvEmpty;
+    private TextView tvUserEmail;
+    private Button btnAuthAction;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
 
         sessionManager = new SessionManager(this);
-        // Kiểm tra xem đã đăng nhập chưa, nếu chưa -> Chuyển về LoginActivity
-        if (!sessionManager.isLoggedIn()) {
-            startActivity(new Intent(this, LoginActivity.class));
-            finish();
-            return;
-        }
-
-        setContentView(R.layout.activity_main);
 
         initViews();
         initViewModel();
         initSearch();
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Cập nhật trạng thái người dùng (Khách hoặc Đã đăng nhập) khi quay lại màn hình
+        updateUserHeader();
+    }
+
     private void initViews() {
         pbLoading = findViewById(R.id.pbHomeLoading);
         tvEmpty = findViewById(R.id.tvEmpty);
-        TextView tvUserEmail = findViewById(R.id.tvUserEmail);
-        ImageButton btnLogout = findViewById(R.id.btnLogout);
+        tvUserEmail = findViewById(R.id.tvUserEmail);
+        btnAuthAction = findViewById(R.id.btnAuthAction);
         RecyclerView rvComics = findViewById(R.id.rvComics);
 
-        // Hiển thị email người dùng đang đăng nhập
-        tvUserEmail.setText("Xin chào: " + sessionManager.getUserEmail());
+        updateUserHeader();
 
-        // Bắt sự kiện Đăng xuất
-        btnLogout.setOnClickListener(v -> {
-            sessionManager.logout();
-            Toast.makeText(this, "Đã đăng xuất!", Toast.LENGTH_SHORT).show();
-            startActivity(new Intent(MainActivity.this, LoginActivity.class));
-            finish();
+        // Nút Đăng nhập / Đăng xuất linh hoạt
+        btnAuthAction.setOnClickListener(v -> {
+            if (sessionManager.isLoggedIn()) {
+                sessionManager.logout();
+                Toast.makeText(this, "Đã đăng xuất!", Toast.LENGTH_SHORT).show();
+                updateUserHeader();
+            } else {
+                startActivity(new Intent(MainActivity.this, LoginActivity.class));
+            }
         });
 
-        // Thiết lập hiển thị danh sách lưới 2 cột
+        // Nạp danh sách lưới 2 cột hiển thị truyện
         rvComics.setLayoutManager(new GridLayoutManager(this, 2));
 
-        // Click vào 1 truyện -> Mở màn hình Chi tiết truyện
+        // Người dùng (kể cả Khách) đều có thể tự do bấm xem Chi tiết & Đọc truyện
         adapter = new ComicAdapter(comic -> {
             Intent intent = new Intent(MainActivity.this, ComicDetailActivity.class);
             intent.putExtra(ComicDetailActivity.EXTRA_COMIC, comic);
@@ -79,6 +83,17 @@ public class MainActivity extends AppCompatActivity {
         });
 
         rvComics.setAdapter(adapter);
+    }
+
+    // Hàm cập nhật hiển thị Header dựa theo trạng thái phiên đăng nhập
+    private void updateUserHeader() {
+        if (sessionManager.isLoggedIn()) {
+            tvUserEmail.setText("Xin chào: " + sessionManager.getUserEmail());
+            btnAuthAction.setText("Đăng xuất");
+        } else {
+            tvUserEmail.setText("Chào mừng Khách");
+            btnAuthAction.setText("Đăng nhập");
+        }
     }
 
     private void initViewModel() {
@@ -108,7 +123,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // Bảo ViewModel nạp danh sách truyện
         viewModel.loadComics();
     }
 
