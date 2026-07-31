@@ -34,7 +34,7 @@ public class ComicRepository {
     public void fetchComics(MutableLiveData<Resource<List<Comic>>> liveData) {
         liveData.setValue(Resource.loading(null));
 
-        if (Constants.SUPABASE_URL.contains("your-supabase-project")) {
+        if (Constants.SUPABASE_URL.contains("your-supabase-project") || api == null) {
             liveData.setValue(Resource.success(getDemoComics()));
             return;
         }
@@ -43,15 +43,20 @@ public class ComicRepository {
             @Override
             public void onResponse(Call<List<Comic>> call, Response<List<Comic>> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    liveData.setValue(Resource.success(response.body()));
+                    if (response.body().isEmpty()) {
+                        // Nếu mảng rỗng -> Có thể do chưa tắt RLS (Row Level Security) trên Supabase
+                        liveData.setValue(Resource.error("Mảng dữ liệu rỗng! Hãy kiểm tra đã tắt RLS trên Supabase chưa.", response.body()));
+                    } else {
+                        liveData.setValue(Resource.success(response.body()));
+                    }
                 } else {
-                    liveData.setValue(Resource.error("Lỗi tải danh sách truyện từ Supabase", null));
+                    liveData.setValue(Resource.error("Lỗi HTTP " + response.code() + ": " + response.message(), null));
                 }
             }
 
             @Override
             public void onFailure(Call<List<Comic>> call, Throwable t) {
-                liveData.setValue(Resource.error("Lỗi kết nối: " + t.getMessage(), null));
+                liveData.setValue(Resource.error("Lỗi kết nối API: " + t.getMessage(), null));
             }
         });
     }
@@ -60,7 +65,7 @@ public class ComicRepository {
     public void getChaptersForComic(int comicId, MutableLiveData<Resource<List<Chapter>>> liveData) {
         liveData.setValue(Resource.loading(null));
 
-        if (Constants.SUPABASE_URL.contains("your-supabase-project")) {
+        if (Constants.SUPABASE_URL.contains("your-supabase-project") || api == null) {
             liveData.setValue(Resource.success(getDemoChapters(comicId)));
             return;
         }
@@ -82,23 +87,19 @@ public class ComicRepository {
         });
     }
 
-    // ⭐ PHƯƠNG THỨC TỰ ĐỘNG HÓA 100%: Tự động sinh danh sách URL trang ảnh từ Storage
-    // Không cần dán bất kỳ link nào vào CSDL! Bạn chỉ cần upload ảnh 1.jpg, 2.jpg... vào thư mục Storage.
+    // Tự động sinh danh sách URL trang ảnh từ Storage
     public void generatePagesAutomatically(int comicId, int chapterId, int totalPages, MutableLiveData<Resource<List<Page>>> liveData) {
         liveData.setValue(Resource.loading(null));
 
         List<Page> pageList = new ArrayList<>();
-        int pagesCount = totalPages > 0 ? totalPages : 10; // Mặc định 10 trang nếu không truyền
+        int pagesCount = totalPages > 0 ? totalPages : 10;
 
-        // Tạo tiền tố URL chuẩn theo cấu trúc thư mục Supabase Storage:
-        // https://<YOUR_PROJECT_ID>.supabase.co/storage/v1/object/public/chapter-pages/comic_X/chapter_Y/
         String baseUrl = Constants.SUPABASE_URL;
-        if (!baseUrl.endsWith("/")) {
+        if (baseUrl != null && !baseUrl.endsWith("/")) {
             baseUrl += "/";
         }
         String folderPath = baseUrl + "storage/v1/object/public/chapter-pages/comic_" + comicId + "/chapter_" + chapterId + "/";
 
-        // Tự động lặp sinh danh sách URL cho từng bức ảnh 1.jpg, 2.jpg, 3.jpg...
         for (int i = 1; i <= pagesCount; i++) {
             String imageUrl = folderPath + i + ".jpg";
             pageList.add(new Page(i, chapterId, i, imageUrl));

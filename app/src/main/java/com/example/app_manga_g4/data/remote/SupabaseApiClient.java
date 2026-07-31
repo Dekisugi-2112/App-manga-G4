@@ -26,8 +26,14 @@ public class SupabaseApiClient {
                     })
                     .build();
 
+            // Đảm bảo baseUrl luôn kết thúc bằng dấu gạch chéo '/'
+            String baseUrl = Constants.SUPABASE_URL;
+            if (baseUrl != null && !baseUrl.endsWith("/")) {
+                baseUrl += "/";
+            }
+
             retrofit = new Retrofit.Builder()
-                    .baseUrl(Constants.SUPABASE_URL)
+                    .baseUrl(baseUrl)
                     .client(okHttpClient)
                     .addConverterFactory(GsonConverterFactory.create())
                     .build();
