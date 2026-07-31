@@ -3,6 +3,7 @@ package com.example.app_manga_g4.data.remote;
 import com.example.app_manga_g4.data.model.Chapter;
 import com.example.app_manga_g4.data.model.Comic;
 import com.example.app_manga_g4.data.model.Page;
+import com.example.app_manga_g4.data.model.UserProfile;
 
 import java.util.List;
 
@@ -27,6 +28,10 @@ public interface SupabaseApi {
 
 
     // === 2. CAC API TRUY VAN CSDL (SUPABASE POSTGREST) ===
+
+    // Thêm profile người dùng vào bảng 'public.profiles'
+    @POST("rest/v1/profiles")
+    Call<Void> insertProfile(@Body UserProfile profile);
 
     // Lấy danh sách toàn bộ truyện từ bảng 'comics'
     @GET("rest/v1/comics?select=*")
